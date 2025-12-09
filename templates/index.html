@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案例检索系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .filter-section {
+            background-color: #b9efb3;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(90, 89, 89, 0.1);
+        }
+        .case-link {
+            color: #7d7bf4;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .case-link:hover {
+            text-decoration: underline;
+            color: #2a5594;
+        }
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .table th {
+            background-color: #021e3b;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .loading {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+        .alert {
+            border-radius: 8px;
+        }
+        .btn {
+            border-radius: 6px;
+            padding: 8px 16px;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container">
+        <h1 class="mb-4 text-primary">涉外法案检索系统</h1>
+        
+        <!-- 错误提示 -->
+        {% if errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        
+        <!-- 筛选表单 -->
+        <div class="filter-section">
+            <form method="get" action="/" id="searchForm">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">案号</label>
+                        <input type="text" class="form-control" name="anhao" value="{{ anhao or '' }}" 
+                               placeholder="输入案号关键词">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">审理法院</label>
+                        <input type="text" class="form-control" name="fayuan" value="{{ fayuan or '' }}" 
+                               placeholder="输入法院名称">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">案件类型</label>
+                        <select class="form-select" name="case_type">
+                            <option value="">全部类型</option>
+                            {% if filter_options.case_types %}
+                                {% for option in filter_options.case_types %}
+                                <option value="{{ option }}" {% if case_type == option %}selected{% endif %}>
+                                    {{ option }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">裁判日期（起）</label>
+                        <input type="date" class="form-control" name="date_start" value="{{ date_start or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">裁判日期（止）</label>
+                        <input type="date" class="form-control" name="date_end" value="{{ date_end or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">申请结果</label>
+                        <select class="form-select" name="result_type">
+                            <option value="">全部结果</option>
+                            {% if filter_options.result_types %}
+                                {% for option in filter_options.result_types %}
+                                <option value="{{ option }}" {% if result_type == option %}selected{% endif %}>
+                                    {{ option }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">判决来源国</label>
+                        <select class="form-select" name="country">
+                            <option value="">全部国家</option>
+                            {% if filter_options.countries %}
+                                {% for option in filter_options.countries %}
+                                <option value="{{ option }}" {% if country == option %}selected{% endif %}>
+                                    {{ option }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary" id="searchBtn">
+                            <span class="me-2"></span>检索
+                        </button>
+                        <a href="/" class="btn btn-secondary">重置</a>
+                        {% if rows %}
+                        <a href="{{ url_for('export_cases', anhao=anhao, fayuan=fayuan, date_start=date_start, date_end=date_end, case_type=case_type, result_type=result_type, country=country) }}" 
+                           class="btn btn-success">
+                            <span class="me-2"></span>导出CSV
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 加载指示器 -->
+        <div class="loading alert alert-info" id="loadingIndicator">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border me-3" role="status"></div>
+                <div>正在搜索，请稍候...</div>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <!-- 搜索结果 -->
+        <div class="mt-4">
+            <h3 class="mb-3">检索结果</h3>
+            
+            {% if rows %}
+            <div class="alert alert-success">
+                共找到数据，显示第 
+                <strong>{{ (page-1)*PAGE_SIZE + 1 }}-{{ (page-1)*PAGE_SIZE + rows|length }}</strong> 条
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered">
+                    <thead>
+                        <tr>
+                            {% for column in display_columns %}
+                            <th>{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            {% for column in display_columns %}
+                            <td>
+                                {% if column == '案号' and row.get('_generated_id') %}
+                                <a href="{{ url_for('case_detail', case_id=row._generated_id, 
+                                    anhao=anhao, fayuan=fayuan, date_start=date_start, 
+                                    date_end=date_end, case_type=case_type, 
+                                    result_type=result_type, country=country, page=page) }}" 
+                                   class="case-link">
+                                    {{ row[column] or '' }}
+                                </a>
+                                {% else %}
+                                {{ row[column] or '' }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div>
+                    {% if page > 1 %}
+                    <a href="?page={{ page-1 }}&anhao={{ anhao or '' }}&fayuan={{ fayuan or '' }}&date_start={{ date_start or '' }}&date_end={{ date_end or '' }}&case_type={{ case_type or '' }}&result_type={{ result_type or '' }}&country={{ country or '' }}" 
+                       class="btn btn-outline-primary">
+                        ← 上一页
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <div class="text-muted">
+                    第 {{ page }} 页
+                </div>
+                
+                <div>
+                    {% if has_next_page %}
+                    <a href="?page={{ page+1 }}&anhao={{ anhao or '' }}&fayuan={{ fayuan or '' }}&date_start={{ date_start or '' }}&date_end={{ date_end or '' }}&case_type={{ case_type or '' }}&result_type={{ result_type or '' }}&country={{ country or '' }}" 
+                       class="btn btn-outline-primary">
+                        下一页 →
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% else %}
+            <div class="alert alert-warning text-center py-5">
+                <h4 class="mb-3">无检索结果</h4>
+                <p class="mb-0">请尝试调整搜索条件</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // 表单提交时显示加载状态
+        document.getElementById('searchForm').addEventListener('submit', function() {
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('searchBtn').disabled = true;
+            document.getElementById('searchBtn').innerHTML = '<span class="me-2">⏳</span>搜索中...';
+        });
+        
+        // 页面加载完成后隐藏加载状态
+        window.addEventListener('load', function() {
+            document.getElementById('loadingIndicator').style.display = 'none';
+            document.getElementById('searchBtn').disabled = false;
+            document.getElementById('searchBtn').innerHTML = '<span class="me-2">🔍</span>检索';
+        });
+    </script>
+</body>
+</html>

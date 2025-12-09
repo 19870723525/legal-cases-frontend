@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案例详情 - {{ case.get('案号', '未命名案例') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .case-detail {
+            margin-top: 20px;
+            padding: 25px;
+            background-color: #f9f8f8;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .case-info {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #717070;
+        }
+        .case-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #333;
+            border-bottom: 3px solid #06315f;
+            padding-bottom: 15px;
+        }
+        .case-description {
+            background-color: rgb(118, 181, 147);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #8aad94;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+        .description-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #161e91;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        .back-link {
+            margin-bottom: 25px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #0f0f0f;
+            min-width: 180px;
+            display: inline-block;
+            margin-right: 15px;
+            vertical-align: top;
+        }
+        .info-value {
+            color: #060606;
+            display: inline-block;
+            max-width: calc(100% - 200px);
+            vertical-align: top;
+        }
+        .detail-section {
+            background-color: rgb(217, 240, 219);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #013873;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .return-url {
+            display: none; /* 隐藏，只用于传递参数 */
+        }
+    </style>
+</head>
+<body class="p-4">
+
+<div class="container">
+    <!-- 返回链接 -->
+    <div class="back-link">
+        <!-- 使用隐藏字段传递搜索参数 -->
+        <div class="return-url" id="returnParams" 
+             data-anhao="{{ search_params.anhao }}"
+             data-fayuan="{{ search_params.fayuan }}"
+             data-date-start="{{ search_params.date_start }}"
+             data-date-end="{{ search_params.date_end }}"
+             data-case-type="{{ search_params.case_type }}"
+             data-result-type="{{ search_params.result_type }}"
+             data-country="{{ search_params.country }}"
+             data-page="{{ search_params.page }}">
+        </div>
+        
+        <button onclick="goBackToSearch()" class="btn btn-outline-secondary">
+            ← 返回搜索结果
+        </button>
+        <a href="/" class="btn btn-outline-primary ms-2">返回首页</a>
+    </div>
+    
+    <div class="case-detail">
+        <!-- 案例标题 -->
+        <div class="case-title">
+            案例详情：{{ case.get('案号', '未提供案号') }}
+        </div>
+        
+        <!-- 基本信息 -->
+        <div class="detail-section">
+            <div class="section-title">基本信息</div>
+            
+            <!-- 首页显示的列 -->
+            <div class="case-info">
+                <span class="info-label">案号：</span>
+                <span class="info-value">{{ case.get('案号', '') }}</span>
+            </div>
+            <div class="case-info">
+                <span class="info-label">审理法院：</span>
+                <span class="info-value">{{ case.get('审理法院', '') }}</span>
+            </div>
+            <div class="case-info">
+                <span class="info-label">裁判日期：</span>
+                <span class="info-value">{{ case.get('裁判日期', '') }}</span>
+            </div>
+        </div>
+        
+        <!-- 其他信息（在首页隐藏的列） -->
+        <div class="detail-section">
+            <div class="section-title">其他信息</div>
+            
+            <!-- 判决来源国 -->
+            <div class="case-info">
+                <span class="info-label">判决来源国：</span>
+                <span class="info-value">{{ case.get('判决来源国', '') }}</span>
+            </div>
+            
+            <!-- 案件类型 -->
+            <div class="case-info">
+                <span class="info-label">案件类型：</span>
+                <span class="info-value">{{ case.get('案件类型', '') }}</span>
+            </div>
+            
+            <!-- 审查依据 -->
+            <div class="case-info">
+                <span class="info-label">审查依据：</span>
+                <span class="info-value">{{ case.get('审查依据', '') }}</span>
+            </div>
+            
+            <!-- 申请结果 -->
+            <div class="case-info">
+                <span class="info-label">申请结果：</span>
+                <span class="info-value">{{ case.get('申请结果', '') }}</span>
+            </div>
+            
+            <!-- 裁判理由 -->
+            <div class="case-info">
+                <span class="info-label">裁判理由：</span>
+                <span class="info-value">{{ case.get('裁判理由', '') }}</span>
+            </div>
+        </div>
+        
+        <!-- 案例简介部分 -->
+        <div class="case-description">
+            <div class="description-title">
+                案例简介
+            </div>
+            {% if case.get('案例简介') %}
+                <div style="line-height: 1.8; white-space: pre-line; font-size: 16px;">
+                    {{ case['案例简介'] }}
+                </div>
+            {% else %}
+                <div class="text-muted" style="font-style: italic;">
+                    暂无案例简介
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- 操作按钮 -->
+        <div class="mt-4 text-center">
+            <button onclick="goBackToSearch()" class="btn btn-primary">返回搜索结果</button>
+            <button class="btn btn-outline-secondary ms-2" onclick="copyCaseInfo()">复制案号</button>
+            <a href="javascript:window.print()" class="btn btn-outline-info ms-2">打印详情</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 返回搜索结果页
+    function goBackToSearch() {
+        const returnParams = document.getElementById('returnParams');
+        let url = '/?';
+        
+        const params = [
+            ['anhao', returnParams.dataset.anhao],
+            ['fayuan', returnParams.dataset.fayuan],
+            ['date_start', returnParams.dataset.dateStart],
+            ['date_end', returnParams.dataset.dateEnd],
+            ['case_type', returnParams.dataset.caseType],
+            ['result_type', returnParams.dataset.resultType],
+            ['country', returnParams.dataset.country],
+            ['page', returnParams.dataset.page]
+        ];
+        
+        // 只添加非空的参数
+        const queryParams = [];
+        params.forEach(([key, value]) => {
+            if (value && value.trim() !== '') {
+                queryParams.push(`${key}=${encodeURIComponent(value)}`);
+            }
+        });
+        
+        if (queryParams.length > 0) {
+            url += queryParams.join('&');
+        }
+        
+        window.location.href = url;
+    }
+    
+    // 复制案号到剪贴板
+    function copyCaseInfo() {
+        const caseNumber = "{{ case.get('案号', '') }}";
+        navigator.clipboard.writeText(caseNumber).then(function() {
+            alert('案号已复制到剪贴板: ' + caseNumber);
+        }, function(err) {
+            alert('复制失败: ' + err);
+        });
+    }
+    
+    // 页面加载时显示调试信息
+    window.addEventListener('load', function() {
+        console.log("案例详情页面加载完成");
+        console.log("搜索参数:", {
+            anhao: "{{ search_params.anhao }}",
+            fayuan: "{{ search_params.fayuan }}",
+            date_start: "{{ search_params.date_start }}",
+            date_end: "{{ search_params.date_end }}",
+            case_type: "{{ search_params.case_type }}",
+            result_type: "{{ search_params.result_type }}",
+            country: "{{ search_params.country }}",
+            page: "{{ search_params.page }}"
+        });
+    });
+</script>
+
+</body>
+</html>
