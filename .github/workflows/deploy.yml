@@ -2,12 +2,16 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    branches: [master]
 
 permissions:
   contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -19,29 +23,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Build with environment variables
+      - name: Build Next.js
         env:
-          # 这里使用你刚刚设置的 secrets
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-        run: npm run build
-      
-      - name: Export static site
-        run: npm run export
+        run: |
+          npm run build
+          npm run export
       
       - name: Setup Pages
-        uses: actions/configure-pages@v3
+        uses: actions/configure-pages@v4
       
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3  # 更新到 v3
         with:
           path: ./out
       
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
